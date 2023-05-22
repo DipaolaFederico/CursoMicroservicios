@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Builder;
+using KafkaFlow;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -10,6 +11,9 @@ using MS.Clientes.Infrastructure.Logging;
 using MS.Clientes.Infrastructure.Repositories;
 using Serilog;
 using Serilog.Filters;
+using KafkaFlow.Configuration;
+using KafkaFlow.Serializer;
+using MS.Clientes.Infrastructure.Producers;
 
 namespace MS.Clientes.Infrastructure
 {
@@ -17,10 +21,30 @@ namespace MS.Clientes.Infrastructure
     {
         public static IServiceCollection ConfigureInfrastructure(this IServiceCollection services, IConfiguration configuration, ILoggingBuilder loggingBuilder)
         {
+            services.AddTransient(typeof(IKafkaProducer), typeof(KafkaProducer));
             services.AddTransient(typeof(IApplicationDbContext), typeof(ApplicationDbContext));
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
+     
             services.AddMemoryCache();
+
+            services.AddKafka(kafka =>
+            {
+                kafka.AddCluster(cluster =>
+                {
+                    string topicName = "Clientes";
+                    cluster.WithBrokers(new[] { "localhost:9092" })
+                        .CreateTopicIfNotExists(topicName, 1, 1)
+                        .AddProducer("publish-client", producer =>
+                        {
+                            producer.DefaultTopic(topicName)
+                                .AddMiddlewares(middlewares: producerMiddlewareConfigurationBuilder =>
+                                {
+                                    producerMiddlewareConfigurationBuilder.AddSerializer<JsonCoreSerializer>();
+                                });
+                        });
+                });
+            });
+
 
             services.Configure<SerilogOptions>(configuration.GetSection(nameof(SerilogOptions)));
 

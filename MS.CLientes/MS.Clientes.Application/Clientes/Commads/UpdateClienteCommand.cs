@@ -5,6 +5,7 @@ using MS.Clientes.Application.Common.Exceptions;
 using MS.Clientes.Application.Common.Interfaces;
 using MS.Clientes.Application.Common.Specifications;
 using MS.Clientes.Domain.Entities;
+using MS.Clientes.Domain.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,11 +21,13 @@ namespace MS.Clientes.Application.Clientes.Commads
     {
         private readonly IRepository<Cliente> _repository;
         private readonly ILogger<UpdateClienteCommandHandler> _logger;
+        private readonly IKafkaProducer _producer;
 
-        public UpdateClienteCommandHandler(IRepository<Cliente> repository, ILogger<UpdateClienteCommandHandler> logger)
+        public UpdateClienteCommandHandler(IRepository<Cliente> repository, ILogger<UpdateClienteCommandHandler> logger, IKafkaProducer producer)
         {
             _repository = repository;
             _logger = logger;
+            _producer = producer;
         }
 
         public async Task<Cliente> Handle(UpdateClienteCommand request, CancellationToken cancellationToken)
@@ -34,6 +37,8 @@ namespace MS.Clientes.Application.Clientes.Commads
                 _logger.LogInformation("Iniciando modificación del cliente id {Id}", request.Id);
 
                 var cliente = await _repository.GetAsync(new ClientByIdSpecification(request.Id), cancellationToken).ConfigureAwait(false);
+
+                var previousState = cliente;
 
                 if (cliente == null)
                     throw new NotFoundException("No existe un cliente para el id proporcionado");
@@ -47,6 +52,8 @@ namespace MS.Clientes.Application.Clientes.Commads
                 cliente.EsEmpleadoBNA = request.EsEmpleadoBNA;
 
                 await _repository.UpdateAsync(cliente, cancellationToken).ConfigureAwait(false);
+
+                await _producer.PublishAsync(new ClienteModificadoEvent(previousState, cliente), cancellationToken).ConfigureAwait(false);
 
                 _logger.LogInformation("Finalizando correctamente la modificación del cliente {@Cliente}", cliente);
 

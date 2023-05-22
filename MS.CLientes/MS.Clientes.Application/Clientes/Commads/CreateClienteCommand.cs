@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using MS.Clientes.Application.Clientes.Queries;
 using MS.Clientes.Application.Common.Interfaces;
 using MS.Clientes.Domain.Entities;
+using MS.Clientes.Domain.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,11 +20,13 @@ namespace MS.Clientes.Application.Clientes.Commads
     {
         private readonly IRepository<Cliente> _repository;
         private readonly ILogger<CreateClienteCommandHandler> _logger;
+        private readonly IKafkaProducer _kafkaProducer;
 
-        public CreateClienteCommandHandler(IRepository<Cliente> repository, ILogger<CreateClienteCommandHandler> logger)
+        public CreateClienteCommandHandler(IRepository<Cliente> repository, ILogger<CreateClienteCommandHandler> logger, IKafkaProducer kafkaProducer)
         {
             _repository = repository;
             _logger = logger;
+            _kafkaProducer = kafkaProducer;
         }
 
         public async Task<long> Handle(CreateClienteCommand request, CancellationToken cancellationToken)
@@ -44,6 +47,8 @@ namespace MS.Clientes.Application.Clientes.Commads
                 };
 
                 await _repository.AddAsync(cliente, cancellationToken).ConfigureAwait(false);
+
+                await _kafkaProducer.PublishAsync(new ClienteCreadoEvent(cliente), cancellationToken).ConfigureAwait(false);
 
                 _logger.LogInformation("Finalizando creación de cliente {@Cliente}", cliente);
 

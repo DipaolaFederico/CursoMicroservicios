@@ -24,7 +24,7 @@ namespace MS.Clientes.Application.Common.Behaviours
             {
                 return await next();
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 var requestName = typeof(TRequest).Name;
 

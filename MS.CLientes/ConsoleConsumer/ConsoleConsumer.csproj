@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net6.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="KafkaFlow" Version="2.2.16" />
+		<PackageReference Include="KafkaFlow.Extensions.Hosting" Version="2.2.16" />
+		<PackageReference Include="KafkaFlow.LogHandler.Console" Version="2.2.16" />
+		<PackageReference Include="KafkaFlow.LogHandler.Microsoft" Version="2.2.16" />
+		<PackageReference Include="KafkaFlow.Microsoft.DependencyInjection" Version="2.2.16" />
+		<PackageReference Include="KafkaFlow.Serializer" Version="2.2.16" />
+		<PackageReference Include="KafkaFlow.Serializer.JsonCore" Version="2.2.16" />
+		<PackageReference Include="KafkaFlow.TypedHandler" Version="2.2.16" />
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="7.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="7.0.0" />
+		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\MS.Clientes.Domain\MS.Clientes.Domain.csproj" />
+	</ItemGroup>
+
+</Project>
