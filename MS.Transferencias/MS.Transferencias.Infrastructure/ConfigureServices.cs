@@ -11,6 +11,8 @@ using MS.Transferencias.Infrastructure.Handlers;
 using MS.Transferencias.Infrastructure.Health;
 using MS.Transferencias.Infrastructure.Logging;
 using MS.Transferencias.Infrastructure.Repositories;
+using Polly;
+using Polly.Timeout;
 using Serilog;
 using Serilog.Filters;
 
@@ -40,10 +42,19 @@ namespace MS.Transferencias.Infrastructure
 
             services.AddHttpContextAccessor();
 
+            Random jitterer = new Random();
+
             services.AddHttpClient("ClientService", client =>
             {
                 client.BaseAddress = new Uri(clientServiceOptions.CurrentValue.BaseUrl);
             })
+            .AddTransientHttpErrorPolicy(builder => builder.Or<TimeoutRejectedException>().WaitAndRetryAsync(5,
+                retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) + TimeSpan.FromMilliseconds(jitterer.Next(0, 1000))))
+            .AddTransientHttpErrorPolicy(builder => builder.Or<TimeoutRejectedException>().CircuitBreakerAsync(
+                3,
+                TimeSpan.FromSeconds(15)
+            ))
+            .AddPolicyHandler(Policy.TimeoutAsync<HttpResponseMessage>(1))
             .ConfigurePrimaryHttpMessageHandler(() =>
                 {
                     return new HttpClientHandler();
